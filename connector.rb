@@ -107,6 +107,12 @@
             type: :array,
             of: :object,
             properties: object_definitions["insert_text"]
+          },
+          {
+            name: "create_image",
+            type: :array,
+            of: :object,
+            properties: object_definitions["create_image"]
           }
         ]
       end,
@@ -114,15 +120,17 @@
         input["writeControl"] = {
           "requiredRevisionId": get("/v1/presentations/#{input["presentation_id"]}")["revisionId"]
         }
+        request_types = [
+          "replace_all_text",
+          "insert_table_rows",
+          "insert_text",
+          "create_image"
+        ]
         requests = []
-        if input["replace_all_text"].present?
-          requests = requests + input["replace_all_text"]
-        end
-        if input["insert_table_rows"].present?
-          requests = requests + input["insert_table_rows"]
-        end
-        if input["insert_text"].present?
-          requests = requests + input["insert_text"]
+        request_types.each do |request_type|
+          if input[request_type].present?
+            requests = requests + input[request_type]
+          end
         end
         post("/v1/presentations/#{input["presentation_id"]}:batchUpdate").
           payload({
@@ -296,6 +304,105 @@
                 "parse_output": "float_conversion",
                 "type": "number",
                 "name": "insertionIndex"
+              }
+            ]
+          }
+        ]
+      end
+    },
+    create_image: {
+      fields: lambda do
+        [
+          {
+            "label": "Create image",
+            "optional": false,
+            "type": "object",
+            "name": "createImage",
+            "properties": [
+              {
+                "control_type": "text",
+                "hint": "User-supplied ID",
+                "label": "Object ID",
+                "type": "string",
+                "name": "objectId"
+              },
+              {
+                "properties": [
+                  {
+                    "name": "pageObjectId"
+                  },
+                  {
+                    "name": "size",
+                    "type": "object",
+                    "properties": [
+                      {
+                        "name": "width",
+                        "type": "object",
+                        "properties": [
+                          {
+                            "name": "magnitude",
+                            "type": "number"
+                          },
+                          {
+                            "name": "unit"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "height",
+                        "type": "object",
+                        "properties": [
+                          {
+                            "name": "magnitude",
+                            "type": "number"
+                          },
+                          {
+                            "name": "unit"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "transform",
+                    "type": "object",
+                    "properties": [
+                      {
+                        "name": "scaleX",
+                        "type": "number"
+                      },
+                      {
+                        "name": "scaleY",
+                        "type": "number"
+                      },
+                      {
+                        "name": "shearX",
+                        "type": "number"
+                      },
+                      {
+                        "name": "shearY",
+                        "type": "number"
+                      },
+                      {
+                        "name": "translateX",
+                        "type": "number"
+                      },
+                      {
+                        "name": "translateY",
+                        "type": "number"
+                      },
+                      {
+                        "name": "unit"
+                      }
+                    ]
+                  }
+                ],
+                "label": "Element properties",
+                "type": "object",
+                "name": "elementProperties"
+              },
+              {
+                "name": "url"
               }
             ]
           }
