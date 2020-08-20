@@ -152,7 +152,7 @@
         ]
         requests = []
         request_types.each do |request_type|
-          if request_type == "replace_image"
+          if input[request_type].present? && request_type == "replace_image"
             input[request_type].each do |replaceImageRequest|
               requests << {
                 "replaceImage": {
