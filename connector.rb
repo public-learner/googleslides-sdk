@@ -84,6 +84,7 @@
     },
     update_presentation: {
       title: "Update Presentation",
+      hint: "Select one request type (e.g. replace text, or replace images) per action. See Google Slides API documentation for more information.",
       input_fields: lambda do |object_definitions|
         [
           {
@@ -94,25 +95,36 @@
             name: "replace_all_text",
             type: :array,
             of: :object,
+            optional: true,
             properties: object_definitions["replace_all_text"]
           },
           {
             name: "insert_table_rows",
             type: :array,
             of: :object,
+            optional: true,
             properties: object_definitions["insert_table_rows"]
           },
           {
             name: "insert_text",
             type: :array,
             of: :object,
+            optional: true,
             properties: object_definitions["insert_text"]
           },
           {
             name: "create_image",
             type: :array,
             of: :object,
+            optional: true,
             properties: object_definitions["create_image"]
+          },
+          {
+            name: "replace_image",
+            type: :array,
+            of: :object,
+            optional: true,
+            properties: object_definitions["replace_image"]
           }
         ]
       end,
@@ -120,15 +132,37 @@
         input["writeControl"] = {
           "requiredRevisionId": get("/v1/presentations/#{input["presentation_id"]}")["revisionId"]
         }
+
+        slide_contents = get("/v1/presentations/#{input["presentation_id"]}")
+        images = {}
+        slide_contents["slides"].each do |slide|
+          slide["pageElements"].each do |element|
+            if element["title"].present?
+              images[element["title"]] = element["objectId"]
+            end
+          end
+        end
+        
         request_types = [
           "replace_all_text",
           "insert_table_rows",
           "insert_text",
-          "create_image"
+          "create_image",
+          "replace_image"
         ]
         requests = []
         request_types.each do |request_type|
-          if input[request_type].present?
+          if request_type == "replace_image"
+            input[request_type].each do |replaceImageRequest|
+              requests << {
+                "replaceImage": {
+                  "imageObjectId": images[replaceImageRequest["replaceImage"]["imageTitle"]],
+                  "imageReplaceMethod": "CENTER_CROP",
+                  "url": replaceImageRequest["replaceImage"]["url"]
+                }
+              }
+            end
+          elsif input[request_type].present?
             requests = requests + input[request_type]
           end
         end
@@ -407,6 +441,32 @@
             ]
           }
         ]
+      end
+    },
+    replace_image: {
+      fields: lambda do
+				[
+				  {
+				    "properties": [
+				      {
+				        "control_type": "text",
+				        "label": "Image title",
+				        "type": "string",
+                "hint": "Add a title in Slides by right-clicking and selecting 'Alt text'",
+                "name": "imageTitle"
+				      },
+				      {
+				        "control_type": "text",
+				        "label": "URL",
+				        "type": "string",
+				        "name": "url"
+				      }
+				    ],
+				    "label": "Replace image",
+				    "type": "object",
+				    "name": "replaceImage"
+				  }
+				]
       end
     },
     presentation: {
